@@ -11,9 +11,6 @@ from datetime import datetime
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR) 
 from scapy.all import *
 
-# Disable the annoying No Route found warning !
-
-
 destination = ""
 s_port      = 0
 e_port      = 0
@@ -63,20 +60,12 @@ def usage():
     sys.exit()
 
 
-def is_up(dst):
-    res = sr1(IP(dst=dst)/ICMP(), timeout=1, verbose=0)
-    if res == None:
-        return False
-    else:
+def is_up(ipdst):
+    res = sr1(IP(dst=ipdst)/ICMP(), timeout=5, verbose=0)
+    if not (res is None):
         return True
-
-
-def is_up_stealth(dst, src):
-    res = sr1(IP(src=src, dst=dst)/ICMP(), timeout=1, verbose=0)
-    if res == None:
-        return False
     else:
-        return True
+        return False
 
 
 def scan_stealth(ipdest, sport, eport):
@@ -88,13 +77,13 @@ def scan_stealth(ipdest, sport, eport):
     for i in range(s_port, e_port+1):
         rand_port = random.randint(1024, 65534)
 
-        res = sr1(IP(dst=ipdest)/TCP(sport=rand_port, dport=i, flags="S"), timeout=1, verbose=0)
+        res = sr1(IP(dst=ipdest)/TCP(sport=rand_port, dport=i, flags="S"), timeout=3, verbose=0)
         
         if str(type(res)) == "<type 'NoneType'>":
             closed += 1
         elif res.haslayer(TCP):
             if res.getlayer(TCP).flags == 0x12:
-                send_rsp = sr(IP(dst=ipdest)/TCP(sport=rand_port, dport=i, flags="R"), timeout=1, verbose=0)
+                send_rsp = sr(IP(dst=ipdest)/TCP(sport=rand_port, dport=i, flags="R"), timeout=3, verbose=0)
                 print str(i), "     open"
         
             elif res.getlayer(TCP).flags == 0x14:
@@ -110,13 +99,13 @@ def scan_masquerade(ipdest, ipsrc, sport, eport):
     for i in range(s_port, e_port+1):
         rand_port = random.randint(1024, 65534)
         
-        res = sr1(IP(dst=ipdest, src=ipsrc)/TCP(dport=i, flags="S"), timeout=1, verbose=0)
+        res = sr1(IP(dst=ipdest, src=ipsrc)/TCP(dport=i, flags="S"), timeout=3, verbose=0)
         
         if str(type(res)) == "<type 'NoneType'>":
             closed += 1
         elif res.haslayer(TCP):
             if res.getlayer(TCP).flags == 0x12:
-                send_rsp = sr(IP(dst=ipdest, src=ipsrc)/TCP(dport=i, flags="AR"), timeout=1, verbose=0)
+                send_rsp = sr(IP(dst=ipdest, src=ipsrc)/TCP(dport=i, flags="AR"), timeout=3, verbose=0)
                 print str(i), "     open"
         
             elif res.getlayer(TCP).flags == 0x14:
@@ -131,13 +120,13 @@ def scan_stealth_masquerade(ipdest, ipsrc, sport, eport):
     for i in range(s_port, e_port+1):
         rand_port = random.randint(1024, 65534)
         
-        res = sr1(IP(dst=ipdest, src=ipsrc)/TCP(sport=rand_port, dport=i, flags="S"), timeout=1, verbose=0)
+        res = sr1(IP(dst=ipdest, src=ipsrc)/TCP(sport=rand_port, dport=i, flags="S"), timeout=3, verbose=0)
         
         if str(type(res)) == "<type 'NoneType'>":
             closed += 1
         elif res.haslayer(TCP):
             if res.getlayer(TCP).flags == 0x12:
-                send_rsp = sr(IP(dst=ipdest, src=ipsrc)/TCP(sport=rand_port, dport=i, flags="AR"), timeout=1, verbose=0)
+                send_rsp = sr(IP(dst=ipdest, src=ipsrc)/TCP(sport=rand_port, dport=i, flags="AR"), timeout=3, verbose=0)
                 print str(i), "     open"
         
             elif res.getlayer(TCP).flags == 0x14:
@@ -151,13 +140,13 @@ def scan(dest, sport, eport):
     print "[*] Classique Scan"
 
     for i in range(s_port, e_port+1):
-        res = sr1(IP(dst=destination)/TCP(dport=i), verbose=0, timeout=1)
+        res = sr1(IP(dst=destination)/TCP(dport=i), verbose=0, timeout=3)
 
         if str(type(res)) == "<type 'NoneType'>":
             closed  += 1
         elif res.haslayer(TCP):
             if res.getlayer(TCP).flags == 0x12:
-                send_rsp = sr(IP(dst=destination)/TCP(dport=i, flags='AR'), verbose=0, timeout=1)
+                send_rsp = sr(IP(dst=destination)/TCP(dport=i, flags='AR'), verbose=0, timeout=3)
                 print str(i), "      open"
             elif res.getlayer(TCP).flags == 0x14:
                 closed += 1
@@ -198,23 +187,13 @@ def main():
     if (destination == "") or (ports == 0):
         usage()
 
-    print "[*] Scanning %s [%d-%d]" % (destination, int(s_port), int(e_port))
-
-    if stealth:
-        if is_up_stealth(destination, masquerade):
-            host_up = True
-        else:
-            host_up = False
+    if is_up(destination):
+        host_up = True
     else:
-        if is_up(destination):
-            host_up = True
-        else:
-            host_up = False
-
-    
-    host_up = True
+        host_up = False
 
     if host_up:
+        print "[*] Scanning %s [%d-%d]" % (destination, int(s_port), int(e_port))
         t1 = datetime.now()
         
         if not stealth and not masquerade:
