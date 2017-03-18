@@ -12,6 +12,7 @@ from termcolor import colored
 listen      = False
 port        = 0
 destination = ""
+shell       = False
 
 def usage():
     print "=== PyNetcat ==="
@@ -19,36 +20,36 @@ def usage():
     print "Some netcat functionalities in python"
     print ""
     print "Usage:"
-    print "         ./pynetcat.py -d 192.168.0.1 -p 999 -l -c"
-    print "         ./pynetcat.py -d 192.168.0.1 -p 999 -l -u=c:\target.exe"
-    print "         ./pynetcat.py -d 192.168.0.1 -p 999 -l -e=\"cat /etc/passwd\""
+    print "    [Server]"
+    print "    * Bind shell"
+    print "         ./pynetcat.py -d 192.168.0.1 -p 999 -l -c" 
+    print "    [Client]"
+    print "         ./pynetcat.py -d 192.168.0.1 -p 999 "
     print ""
     print "Options:"
     print "         -l, --listen         listen"
-    print "         -e, --execute        execute [file] upon receiving a connection"
-    print "         -b, --bind-shell     initialize a bind shell"
-    print "         -r, --reverse-shell  initialize a reverse shell"
-    print "         -u, --upload         upload a file upon receiving a connection"
+    print "         -c, --reverse-shell  initialize a reverse shell"
 
 
 def client_t(client, addr):
-    
+
     host = addr[0]
     print "[*] Connection received from %s:%d" % (host, addr[1])
-    shell = "<"+colored(host, 'blue')+":"+colored("#", 'yellow')+"> "
+    if shell:
+        prompt = "<"+colored(host, 'blue')+":"+colored("#", 'yellow')+"> "
 
-    while True:
+        while True:
 
-        client.send(shell)
+            client.send(prompt)
 
-        response = ""
+            response = ""
 
-        while "\n" not in response:
-            response += client.recv(4096)
+            while "\n" not in response:
+                response += client.recv(4096)
 
-        output = run_cmd(response)
+            output = run_cmd(response)
 
-        client.send(output)
+            client.send(output)
 
 
 def run_cmd(cmd):
@@ -58,36 +59,20 @@ def run_cmd(cmd):
     try:
         response = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
     except:
-        response = "[!] Command failed.\n"
+        response = "[!] PyNetcat : command failed '" + cmd + "'.\n"
 
     return response        
 
 
 def client():
 
-    cmd = ""
-
     print "[*] Connecting to %s:%d ..." % (destination, port)
-    r = raw_input("[*] Send information before connecting ?(o/N)")
-    
-    print r
-
-    if r in ("O", "o"):
-        cmd = raw_input("> ")
-        cmd += "\n"
-    # else:
-    #     print "[*] Option not handled. Exiting."
-    #     sys.exit(0)
-
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    
-    try:
 
+    try:
         s.connect((destination, port))
         print "[*] Connected!"
-        if len(cmd):
-            s.send(cmd)
-
+           
         while True:
             recv_len = 1
             res      = ""
@@ -110,6 +95,17 @@ def client():
         print str(e)
         s.close()
         sys.exit(0)
+
+    # r = raw_input("[*] Send information before connecting ?(o/N)")
+    
+    # print r
+
+    # if r in ("O", "o"):
+    #     cmd = raw_input("> ")
+    #     cmd += "\n"
+    # else:
+    #     print "[*] Option not handled. Exiting."
+    #     sys.exit(0)
 
 
 def server():
@@ -141,14 +137,16 @@ def server():
         print "\r[*] Ctrl+C received. Exiting"
         sys.exit(0)
 
+
 def main():
     
     global listen
     global port 
     global destination
+    global shell
 
     try:
-        opt, args = getopt.getopt(sys.argv[1:], "hlp:d:", ["help", "listen", "port", "destination"])
+        opt, args = getopt.getopt(sys.argv[1:], "hlp:d:s", ["help", "listen", "port", "destination","shell"])
     except getopt.GetoptError as e:
         print str(e)        
         print ""
@@ -164,6 +162,8 @@ def main():
             port = int(a)
         elif o in ("-d", "--destination"):
             destination = a 
+        elif o in ("-s", "--shell"):
+            shell = True
         else:
             print "[*] Option is not handled"
     
@@ -175,8 +175,20 @@ def main():
 
     if not listen and len(destination):
         # Pynetcat as a client 
+        print "--------------------------"
+        print "-                        -"
+        print "-   PyNetcat : CLIENT    -"
+        print "-                        -"
+        print "--------------------------"
+        print ""
         client()
     elif listen:
+        print "--------------------------"
+        print "-                        -"
+        print "-   PyNetcat : SERVER    -"
+        print "-                        -"
+        print "--------------------------"
+        print ""
         # Pynetcat as a server
         server()
 
