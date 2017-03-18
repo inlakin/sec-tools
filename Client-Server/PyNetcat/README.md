@@ -4,6 +4,7 @@ In progress.
 
 ## Usage 
     
+    ./pynetcat.py -d 192.168.0.1 -p 999
     ./pynetcat.py -d 192.168.0.1 -p 999 -l -c
     ./pynetcat.py -d 192.168.0.1 -p 999 -l -u=c:\target.exe
     ./pynetcat.py -d 192.168.0.1 -p 999 -l -e="cat /etc/passwd"

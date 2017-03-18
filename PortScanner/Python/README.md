@@ -30,7 +30,8 @@
 
 
 ### Todo :
-    * Fixing host discovery 
-    * Removing warning about ipv6
     * Multi threading / Multi processing
     * XMAS Scan ()
+    * UDP Scan
+    * Multiple host scanning
+    * TCP FIN and others
