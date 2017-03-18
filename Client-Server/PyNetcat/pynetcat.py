@@ -7,6 +7,7 @@ import socket
 import getopt
 import threading
 import subprocess
+from termcolor import colored
 
 listen      = False
 port        = 0
@@ -32,8 +33,9 @@ def usage():
 
 def client_t(client, addr):
     
-    print "[*] Connection received from %s:%d" % (addr[0], addr[1])
-    shell = "<%s:#> " % addr[0]
+    host = addr[0]
+    print "[*] Connection received from %s:%d" % (host, addr[1])
+    shell = "<"+colored(host, 'blue')+":"+colored("#", 'yellow')+"> "
 
     while True:
 
@@ -55,9 +57,8 @@ def run_cmd(cmd):
 
     try:
         response = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
-        print response
     except:
-        response = "[!] Command failed.\r\n"
+        response = "[!] Command failed.\n"
 
     return response        
 
