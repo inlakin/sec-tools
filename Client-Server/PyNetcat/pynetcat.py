@@ -28,7 +28,7 @@ def usage():
     print ""
     print "Options:"
     print "         -l, --listen         listen"
-    print "         -c, --reverse-shell  initialize a reverse shell"
+    print "         -c, --bind-shell  initialize a bind shell"
 
 
 def client_t(client, addr):
@@ -150,7 +150,8 @@ def main():
     except getopt.GetoptError as e:
         print str(e)        
         print ""
-        print usage()
+        usage()
+        print sys.exit(0)
 
     for o, a in opt:
         if o in ("-h", "--help"):
@@ -173,7 +174,7 @@ def main():
         usage()
         sys.exit(0)
 
-    if not listen and len(destination):
+    if not listen and len(destination) and port > 0:
         # Pynetcat as a client 
         print "--------------------------"
         print "-                        -"
