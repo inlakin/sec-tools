@@ -7,12 +7,140 @@ import socket
 import getopt
 import threading
 import subprocess
+import paramiko
+import re
+
 from termcolor import colored
 
 listen      = False
 port        = 0
 destination = ""
 shell       = False
+encrypt     = False
+ssh_auth    = ""
+ssh_user    = ""
+ssh_passwd  = ""
+
+class SSH_Server(paramiko.ServerInterface):
+    def __init__(self):
+        self.event = threading.Event()
+
+    def check_channel_request(self, kind, chanid):
+        if kind == 'session':
+            return paramiko.OPEN_SUCCEEDED
+
+        return paramiko.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
+
+    def check_auth_password(self, user, passwd):
+        if user == ssh_user and passw == ssh_passwd:
+            return paramiko.AUTH_SUCCESSFUL
+
+        return paramiko.AUTH_FAILED
+def ssh_parse_auth(auth):
+    pat = r"([\w]+),([\w]+)"
+    res = re.search(pat,auth)
+    if res:
+        return res.group(1), res.group(2)
+    else:
+        print "[!] Failed parsing SSH credentials"
+        sys.exit(1)
+def ssh_init():
+    global ssh_user
+    global ssh_passwd
+    global ssh_port
+    
+    ssh_user, ssh_passwd = ssh_parse_auth(ssh_auth)
+    print "[*] SSH initialized with USER " + ssh_user + " PASS " + ssh_passwd
+def ssh_server():
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.bind((destination, port))
+    s.listen(1)
+
+    ssh_init()
+
+    print "[+] Listening for connection ..."
+
+    try:
+        ssh_client, ssh_client_addr = s.accept()
+    except Exception, e:
+        print "[!] Listen failed " + str(e)
+        return False
+
+    print "[*] Connection established with " + ssh_client_addr[0] + ":" + str(ssh_client_addr[1]) + "."
+
+    ssh_session = paramiko.Transport(client)
+    server = SSH_Server()
+    try:
+        ssh_session.start_server(server=server)
+    except paramiko.SSHException, x:
+        print "[!] SSH negociation failed"
+
+    chan = ssh_session.accept(20)
+    print "[*] SSH: authentication successful"
+    print chan.recv(1024)
+    chan.send("=== SSH CONFIGURED ===")
+
+
+
+    return True
+def ssh_command(ip, user, passwd, cmd):
+        
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        try:
+            client.connect(ip, username=user, password=passwd)
+            ssh_session = client.get_transport().open_session()
+            
+            if ssh_session.active:
+                ssh_session.exec_command(cmd)
+                print ssh_session.recv(1024)
+            return
+        except Exception, e:
+            print "[!] Failed to connect to " + user + "@" + ip
+            print "[!] Exception : " + str(e)
+            sys.exit(0)
+def ssh_client():
+    username = raw_input("SSH Username> ")
+    password = raw_input('SSH Password> ')
+    
+    ssh_client_auth = username +","+password
+
+    print "[*] Connecting to %s:%d ..." % (destination, port)
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    try:
+        s.connect((destination, port))
+        print "[*] Connected"
+        print "[*] Initializing SSH connection with USER " + username + " PASS " + password
+
+        s.send(ssh_client_auth)
+        data = s.recv(1024)
+
+        if "Failed" in data:
+            print "[!] Credentials failed"
+            sys.exit(0)
+        else:
+            print "[*] SSH Connection established"
+            while True:
+                recv_len = 1 
+                data = s.recv(4096)
+                res += data
+
+                if recv_len < 4096:
+                    break
+
+                print res,
+
+                cmd = raw_input()
+                cmd += "\n"
+                s.send(cmd)
+
+    except Exception as e:
+        print str(e)
+        sys.exit(1)
+
 
 def usage():
     print "=== PyNetcat ==="
@@ -30,11 +158,11 @@ def usage():
     print "         -l, --listen         listen"
     print "         -c, --bind-shell  initialize a bind shell"
 
-
 def client_t(client, addr):
 
     host = addr[0]
     print "[*] Connection received from %s:%d" % (host, addr[1])
+    
     if shell:
         prompt = "<"+colored(host, 'blue')+":"+colored("#", 'yellow')+"> "
 
@@ -51,7 +179,6 @@ def client_t(client, addr):
 
             client.send(output)
 
-
 def run_cmd(cmd):
 
     cmd =  cmd.rstrip()
@@ -63,7 +190,6 @@ def run_cmd(cmd):
 
     return response        
 
-
 def client():
 
     print "[*] Connecting to %s:%d ..." % (destination, port)
@@ -72,7 +198,8 @@ def client():
     try:
         s.connect((destination, port))
         print "[*] Connected!"
-           
+        
+        
         while True:
             recv_len = 1
             res      = ""
@@ -87,13 +214,17 @@ def client():
 
             print res,
             
-            cmd = raw_input()
-            cmd += "\n"
-            s.send(cmd)
+            try:
+                cmd = raw_input()
+                cmd += "\n"
+                s.send(cmd)
+            except KeyboardInterrupt:
+                print "\r\n[*] Ctrl+C received. Exiting."
+                s.close()
+                sys.exit(0)
 
     except Exception, e:
         print str(e)
-        s.close()
         sys.exit(0)
 
     # r = raw_input("[*] Send information before connecting ?(o/N)")
@@ -106,7 +237,6 @@ def client():
     # else:
     #     print "[*] Option not handled. Exiting."
     #     sys.exit(0)
-
 
 def server():
 
@@ -135,8 +265,8 @@ def server():
             client_thread.start()
     except KeyboardInterrupt:
         print "\r[*] Ctrl+C received. Exiting"
+        s.close()
         sys.exit(0)
-
 
 def main():
     
@@ -144,9 +274,11 @@ def main():
     global port 
     global destination
     global shell
+    global encrypt
+    global ssh_auth
 
     try:
-        opt, args = getopt.getopt(sys.argv[1:], "hlp:d:s", ["help", "listen", "port", "destination","shell"])
+        opt, args = getopt.getopt(sys.argv[1:], "hlp:d:se:", ["help", "listen", "port", "destination","shell", "encrypt="])
     except getopt.GetoptError as e:
         print str(e)        
         print ""
@@ -165,6 +297,9 @@ def main():
             destination = a 
         elif o in ("-s", "--shell"):
             shell = True
+        elif o in ("-e", "--encrypt"):
+            encrypt = True
+            ssh_auth = a 
         else:
             print "[*] Option is not handled"
     
@@ -174,8 +309,7 @@ def main():
         usage()
         sys.exit(0)
 
-    if not listen and len(destination) and port > 0:
-        # Pynetcat as a client 
+    if not listen and len(destination) and port > 0 and not encrypt:
         print "--------------------------"
         print "-                        -"
         print "-   PyNetcat : CLIENT    -"
@@ -183,15 +317,30 @@ def main():
         print "--------------------------"
         print ""
         client()
-    elif listen:
+    elif not listen and len(destination) and port > 0 and encrypt:
+        print "------------------------------"
+        print "-                            -"
+        print "-   PyNetcat : SSH-CLIENT    -"
+        print "-                            -"
+        print "------------------------------"
+        print ""
+        ssh_client()
+    elif listen and port > 0 and not encrypt:
         print "--------------------------"
         print "-                        -"
         print "-   PyNetcat : SERVER    -"
         print "-                        -"
         print "--------------------------"
         print ""
-        # Pynetcat as a server
         server()
+    elif listen and encrypt:
+        print "-----------------------------"
+        print "-                           -"
+        print "-   PyNetcat : SSH-SERVER   -"
+        print "-                           -"
+        print "-----------------------------"
+        print ""
+        ssh_server()
 
 main()
 
