@@ -1,9 +1,6 @@
 [
     {
         "module":"dirlister"
-        // 'timeout': 2,
-        // 'args': {'foo','bar'},
-        // 'times_to_run':1
     },
     {
         "module":"environment"

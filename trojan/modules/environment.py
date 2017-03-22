@@ -4,5 +4,5 @@
 import os
 
 def run(**args):
-    print "[*] In environment module."
+    print "[=>] MODULE Environment"
     return str(os.environ)

