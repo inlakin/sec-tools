@@ -8,7 +8,6 @@ I will try to write each of those examples in C, Python, and (Perl and/or Ruby).
 
 Repo structure :
 
-```
 .
 ├── [Client-Server](https://github.com/inlakin/sec-tools/client-server/)
 │   ├── Clients
@@ -46,7 +45,4 @@ Repo structure :
 │   └── trojan.py
 └── [utils](https://github.com/inlakin/sec-tools/utils/)
     └── stools.sh
-
-```
-
 
