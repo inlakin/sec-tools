@@ -1,4 +1,6 @@
-# Trojan experimentation
+# (very) Simple Trojan 
+
+Experimentation
 
 ### Functionnalities :
 
@@ -7,14 +9,17 @@
     [ ] Automate Trojan creation (ID, config file, fetching modules, push to FTP, ...)
     [ ] Administrate through SFTP
     [ ] Encryption of modules, configuration, exfiltrated data
-    [ ] Automating:
+    [ ] Automation:
         [ ] backend management for pulled-down data 
+    [ ] Attached to another processus (stealth)
+
 
 ### Modules :
     [*] Dirlister
     [*] Environment checker
     [ ] Keylogger
     [ ] Screenshot
+    [ ] Webcam
     [ ] Win/Linux hashes 
         [ ] etc/passwd
         [ ] windows
@@ -22,10 +27,9 @@
             [ ] XP : C:/Windows/Repair/system
             or
             [ ] XP : C:/Windows/System32/config/sam
-
     [ ] WCE - Windows Credentials Editors
     [ ] Sandbox detection
-    [ ] List exising process - banner grabbing - version
+    [ ] List exising process 
     [ ] Checking SSH installation
 
 #### Credits
