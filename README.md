@@ -8,8 +8,9 @@ I will try to write each of those examples in C, Python, and (Perl and/or Ruby).
 
 Repo structure :
 
+```
 .
-├── [Client-Server](https://github.com/inlakin/sec-tools/client-server/)
+├── Client-Server
 │   ├── Clients
 │   │   ├── TCP Client
 │   │   │   ├── C
@@ -17,13 +18,13 @@ Repo structure :
 │   │   │       └── tcp_client.py
 │   │   └── UDP Client
 │   │       └── udp_client.py
-│   ├── [PyNetcat](https://github.com/inlakin/sec-tools/client-server/pynetcat/)
+│   ├── PyNetcat
 │   │   ├── pynetcat.py
 │   │   └── README.md
 │   └── Servers
 │       └── TCP Server
 │           └── tcp_server.py
-├── [PortScanner](https://github.com/inlakin/sec-tools/portscanner/)
+├── PortScanner
 │   ├── C
 │   │   ├── portscanner
 │   │   ├── portscanner.c
@@ -33,7 +34,7 @@ Repo structure :
 │       ├── portscanner.py
 │       └── README.md
 ├── README.md
-├── [Trojan](https://github.com/inlakin/sec-tools/trojan/)
+├── Trojan
 │   ├── config
 │   │   └── abc.json
 │   ├── data
@@ -43,6 +44,9 @@ Repo structure :
 │   │   └── environment.py
 │   ├── README.md
 │   └── trojan.py
-└── [utils](https://github.com/inlakin/sec-tools/utils/)
+└── utils
     └── stools.sh
+
+```
+
 
